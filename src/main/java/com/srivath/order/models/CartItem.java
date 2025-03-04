@@ -1,4 +1,4 @@
-package com.srivath.cart.models;
+package com.srivath.order.models;
 
 import lombok.Data;
 
