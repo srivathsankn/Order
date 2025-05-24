@@ -18,6 +18,7 @@ public class Order {
     private String cartId;
     private String userEmail;
     private LocalDate orderDate;
+    @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;
     private Double OrderAmount;
     @OneToMany(mappedBy = "order")

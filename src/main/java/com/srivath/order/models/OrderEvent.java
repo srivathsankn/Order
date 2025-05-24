@@ -1,5 +1,6 @@
 package com.srivath.order.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -13,9 +14,13 @@ public class OrderEvent {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private LocalDateTime dateTime;
+    @Enumerated(EnumType.STRING)
     private OrderStatus beforeStatus;
+    @Enumerated(EnumType.STRING)
     private OrderStatus afterStatus;
     @ManyToOne
+    @JsonIgnore
+    @JoinColumn(name = "order_id", nullable = false)
     //@JoinColumn(name = "order_id")
     private Order order;
 
