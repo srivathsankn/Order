@@ -52,6 +52,8 @@ public class OrderService {
         if (event != null && event.getEventName().equals("PLACE_ORDER"))
         {
             PlaceOrderEvent placeOrderEvent = (PlaceOrderEvent) event;
+
+            //Populate Order from PlaceOrderEvent
             CartOrderDto cartOrderDto = placeOrderEvent.getCartOrderDto();
             Order order = new Order();
             order.setCartId(cartOrderDto.getCartId());
@@ -62,6 +64,7 @@ public class OrderService {
             order.setOrderStatus(OrderStatus.PENDING);
             Order savedOrder = orderRepository.save(order); //to getOrder ID
 
+            //Create OrderEvent for the new order
             OrderEvent orderEvent = new OrderEvent();
             orderEvent.setOrder(savedOrder);
             orderEvent.setBeforeStatus(savedOrder.getOrderStatus());
@@ -69,6 +72,7 @@ public class OrderService {
             orderEvent.setDateTime(orderDateTime);
             OrderEvent savedOrderEvent = orderEventRepository.save(orderEvent);
 
+            //Update Order with the new status and event
             savedOrder.setOrderStatus(OrderStatus.CONFIRMED);
             savedOrder.getOrderEvents().add(savedOrderEvent);
             Order finalOrder =orderRepository.save(savedOrder);
