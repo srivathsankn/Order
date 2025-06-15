@@ -17,6 +17,8 @@ public class Order {
 
     private String cartId;
     private String userEmail;
+    private String userName;
+    private String userPhone;
     private LocalDate orderDate;
     @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;
@@ -83,5 +85,21 @@ public class Order {
 
     public void setOrderEvents(List<OrderEvent> orderEvents) {
         this.orderEvents = orderEvents;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getUserPhone() {
+        return userPhone;
+    }
+
+    public void setUserPhone(String userPhone) {
+        this.userPhone = userPhone;
     }
 }

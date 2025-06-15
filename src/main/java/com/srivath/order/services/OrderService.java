@@ -88,6 +88,10 @@ public class OrderService {
         orderDto.setUserEmail(order.getUserEmail());
         orderDto.setOrderDate(order.getOrderDate());
         orderDto.setCartId(order.getCartId());
+        orderDto.setOrderAmount(order.getOrderAmount());
+        orderDto.setUserName(order.getUserName());
+        orderDto.setUserPhone(order.getUserPhone());
+
         OrderPlacedEvent orderPlacedEvent = new OrderPlacedEvent(orderDto);
         // Push the event to Kafka
         kafkaTemplate.send(topicName, orderPlacedEvent);
