@@ -29,15 +29,10 @@ public class Cart implements Serializable {
     private LocalDate OrderedOn;
     private Long orderId;
     private Address deliveryAddress;
-    private Set<PaymentMethods> paymentMethods;
     private Double totalAmount;
-
-
 
     public Cart() {
         cartItems = new ArrayList<>();
-        paymentMethods = new HashSet<>();
-
     }
 
     public String getId() {
@@ -110,14 +105,6 @@ public class Cart implements Serializable {
 
     public void setDeliveryAddress(Address deliveryAddress) {
         this.deliveryAddress = deliveryAddress;
-    }
-
-    public Set<PaymentMethods> getPaymentMethods() {
-        return paymentMethods;
-    }
-
-    public void setPaymentMethods(Set<PaymentMethods> paymentMethods) {
-        this.paymentMethods = paymentMethods;
     }
 
     public Double getTotalAmount() {

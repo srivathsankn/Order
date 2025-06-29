@@ -2,19 +2,19 @@ package com.srivath.order.services;
 
 import com.srivath.ecombasedomain.dtos.CartOrderDto;
 import com.srivath.ecombasedomain.dtos.OrderDto;
+import com.srivath.ecombasedomain.dtos.PaymentInstance;
 import com.srivath.ecombasedomain.events.Event;
 import com.srivath.ecombasedomain.events.OrderPlacedEvent;
+import com.srivath.ecombasedomain.events.PaymentCompletedEvent;
 import com.srivath.ecombasedomain.events.PlaceOrderEvent;
 import com.srivath.order.dtos.OrderDTO;
 import com.srivath.order.dtos.OrderStatusDTO;
 import com.srivath.order.exceptions.OrderNotFoundException;
 import com.srivath.order.exceptions.OrderStatusChangeException;
-import com.srivath.order.models.Cart;
-import com.srivath.order.models.Order;
-import com.srivath.order.models.OrderEvent;
-import com.srivath.order.models.OrderStatus;
+import com.srivath.order.models.*;
 import com.srivath.order.repositories.OrderEventRepository;
 import com.srivath.order.repositories.OrderRepository;
+import com.srivath.order.repositories.PaymentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -36,6 +37,8 @@ public class OrderService {
 
     @Autowired
     private KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     OrderService(OrderRepository orderRepository, OrderEventRepository orderEventRepository) {
         this.orderRepository = orderRepository;
@@ -47,8 +50,7 @@ public class OrderService {
     }
 
     @KafkaListener(topics = "${spring.kafka.topic.name}",groupId = "${spring.kafka.consumer.group-id}")
-    public void consume(Event event)
-    {
+    public void consume(Event event) throws OrderNotFoundException {
         if (event != null && event.getEventName().equals("PLACE_ORDER"))
         {
             PlaceOrderEvent placeOrderEvent = (PlaceOrderEvent) event;
@@ -62,6 +64,8 @@ public class OrderService {
             order.setOrderDate(orderDateTime.toLocalDate());
             order.setUserEmail(cartOrderDto.getUserEmail());
             order.setOrderStatus(OrderStatus.PENDING);
+            order.setUserName(cartOrderDto.getUserName());
+            order.setUserPhone(cartOrderDto.getUserPhone());
             Order savedOrder = orderRepository.save(order); //to getOrder ID
 
             //Create OrderEvent for the new order
@@ -77,6 +81,65 @@ public class OrderService {
             savedOrder.getOrderEvents().add(savedOrderEvent);
             Order finalOrder =orderRepository.save(savedOrder);
             pushOrderPlacedEvent(finalOrder);
+
+        }
+
+        if (event != null && event.getEventName().equals("PAYMENT_COMPLETED"))
+        {
+            PaymentCompletedEvent paymentCompletedEvent = (PaymentCompletedEvent) event;
+
+            Long orderId = paymentCompletedEvent.getPaymentDto().getOrderId();
+            Order order = orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException("Order with " + orderId +" not found"));
+            OrderStatus orderStatus = paymentCompletedEvent.getPaymentDto().getStatus().equals("COMPLETED") ? OrderStatus.PAID_FULL: OrderStatus.PAID_PART;
+            OrderStatus previousStatus = order.getOrderStatus();
+            order.setOrderStatus(orderStatus);
+            Order savedOrder = orderRepository.save(order);
+
+
+            OrderEvent orderEvent = new OrderEvent();
+            orderEvent.setBeforeStatus(previousStatus);
+            orderEvent.setAfterStatus(orderStatus);
+            orderEvent.setDateTime(LocalDateTime.now());
+            orderEvent.setOrder(savedOrder);
+            OrderEvent savedOrderEvent = orderEventRepository.save(orderEvent);
+            savedOrder.getOrderEvents().add(savedOrderEvent);
+
+            if (savedOrder.getPayments().isEmpty()) {
+                for (PaymentInstance paymentInstance : paymentCompletedEvent.getPaymentDto().getPaymentInstances()) {
+                    Payment payment = new Payment();
+                    payment.setPaymentMethod(paymentInstance.getPaymentMethod());
+                    payment.setAmount(paymentInstance.getAmount());
+                    payment.setAdditionalInfo(paymentInstance.getAdditionalInfo());
+                    payment.setPaymentStatus(paymentInstance.getPaymentStatus());
+                    payment.setPaymentDate(paymentInstance.getPaymentDate());
+                    payment.setOrder(savedOrder);
+                    Payment savedPayment = paymentRepository.save(payment);
+
+                    savedOrder.getPayments().add(savedPayment);
+
+                }
+            }
+            else
+            {
+                int numberOfPayments = paymentCompletedEvent.getPaymentDto().getPaymentInstances().size();
+                PaymentInstance paymentInstance = paymentCompletedEvent.getPaymentDto().getPaymentInstances().get(numberOfPayments-1);
+                Payment payment = new Payment();
+                payment.setOrder(savedOrder);
+                payment.setPaymentMethod(paymentInstance.getPaymentMethod());
+                payment.setAmount(paymentInstance.getAmount());
+                payment.setAdditionalInfo(paymentInstance.getAdditionalInfo());
+                payment.setPaymentStatus(paymentInstance.getPaymentStatus());
+                payment.setPaymentDate(paymentInstance.getPaymentDate());
+                Payment savedPayment = paymentRepository.save(payment);
+                savedOrder.getPayments().add(savedPayment);
+            }
+            // Save the updated order
+
+
+            //Order savedOrder =
+            orderRepository.save(savedOrder);
+            //orderEvent.setOrder(savedOrder);
+
 
         }
     }

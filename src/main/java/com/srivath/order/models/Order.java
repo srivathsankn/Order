@@ -23,12 +23,15 @@ public class Order {
     @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;
     private Double OrderAmount;
-    @OneToMany(mappedBy = "order")
+    @OneToMany(mappedBy = "order", fetch = FetchType.EAGER)
     private List<OrderEvent> orderEvents;
+    @OneToMany(mappedBy = "order", fetch = FetchType.EAGER)
+    private List<Payment> payments;
 
     public Order()
     {
         orderEvents = new ArrayList<>();
+        payments = new ArrayList<>();
     }
 
     public Long getOrderId() {
@@ -101,5 +104,13 @@ public class Order {
 
     public void setUserPhone(String userPhone) {
         this.userPhone = userPhone;
+    }
+
+    public List<Payment> getPayments() {
+        return payments;
+    }
+
+    public void setPayments(List<Payment> payments) {
+        this.payments = payments;
     }
 }
