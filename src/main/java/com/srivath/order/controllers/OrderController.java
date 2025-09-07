@@ -22,7 +22,7 @@ public class OrderController {
         this.orderService = orderService;
     }
 
-    @GetMapping("id/{orderId}")
+    @GetMapping("/id/{orderId}")
     public ResponseEntity<OrderDTO> getOrderById(@PathVariable Long orderId) throws OrderNotFoundException {
         return ResponseEntity.ok(OrderDTO.from(orderService.getOrderById(orderId)));
     }
